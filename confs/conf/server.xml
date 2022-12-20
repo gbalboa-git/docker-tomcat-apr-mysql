@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Server port="-1" shutdown="YOUSHALLNOTPASS">
+  <Listener className="org.apache.catalina.startup.VersionLoggerListener"/>  
+  <Listener SSLEngine="on" className="org.apache.catalina.core.AprLifecycleListener"/>  
+  <Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener"/>
+  <Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener"/>
+  <Listener className="org.apache.catalina.core.ThreadLocalLeakPreventionListener"/>
+  
+<GlobalNamingResources>
+	<Resource name="jdbc/authority" 
+            factory="org.balvigu.jdbc.EncryptedDataSourceFactory"
+            auth="Container" 
+            type="javax.sql.DataSource"
+            maxTotal="100" 
+            maxIdle="30" 
+            maxWaitMillis="10000"
+            validationQuery="/* ping */ SELECT 1"
+            validationQueryTimeout="10"
+            validationInterval="10000"
+            testOnBorrow="true"
+            testWhileIdle="true"
+            username="${db.UsrName}" 
+            password="${db.UsrPass}" 
+            driverClassName="com.mysql.cj.jdbc.Driver"
+            url="jdbc:mysql://${db.host}:${db.port}/${db.name}"/>
+</GlobalNamingResources>
+  
+  <Service name="Catalina">
+    <Connector port="${port.https}" protocol="org.apache.coyote.http11.Http11Nio2Protocol"
+               maxThreads="150" SSLEnabled="true" >
+               
+        <UpgradeProtocol className="org.apache.coyote.http2.Http2Protocol"/>
+        <SSLHostConfig>
+            <Certificate certificateKeyFile="${certs.key}"
+                         certificateFile="${certs.cert}"
+                         type="RSA" />
+        </SSLHostConfig>
+    </Connector>
+         
+    <Engine defaultHost="localhost" name="Catalina">
+      <Realm className="org.apache.catalina.realm.DataSourceRealm"  dataSourceName="jdbc/authority"
+                  userTable="${db.UsrTable}" 
+                  userNameCol="${db.UsrNameField}" 
+                  userCredCol="${db.UsrPassField}"
+                  userRoleTable="${db.UsrRoleTable}" 
+                  roleNameCol="${db.RoleFieldName}">
+          <CredentialHandler className="org.apache.catalina.realm.SecretKeyCredentialHandler"
+            algorithm="PBKDF2WithHmacSHA512"/> 
+      </Realm>
+      
+      <Host appBase="webapps" autoDeploy="true" name="localhost" unpackWARs="true" copyXML="true" deployXML="true">
+
+        <Valve className="org.apache.catalina.valves.AccessLogValve" directory="logs" pattern="%h %l %u %t &quot;%r&quot; %s %b" prefix="localhost_access_log" suffix=".txt"/>
+
+      </Host>
+    </Engine>
+  </Service>
+</Server>
